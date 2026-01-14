@@ -1,5 +1,6 @@
 module.exports = {
   GUEST: "guest",
   BUSINESS: "business",
-  HOTEL: "hotel"
+  HOTEL: "hotel",
+  ADMIN: "admin",
 };
