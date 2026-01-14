@@ -1,4 +1,5 @@
 const express = require("express");
+const { registerHotel, hotelLogin } = require("../controllers/auth.controller");
 
 const router = express.Router();
 

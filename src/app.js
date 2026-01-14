@@ -6,6 +6,7 @@ const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 
 const { notFound, errorHandler } = require("./middleware/error");
+const authRoutes = require("./routes/auth.routes"); // ✅ ADD THIS
 
 dotenv.config();
 const app = express();
@@ -17,7 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-// app.use("/api", );
+// ✅ MOUNT ROUTES
+app.use("/api/auth", authRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
