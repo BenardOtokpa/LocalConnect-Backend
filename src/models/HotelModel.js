@@ -61,24 +61,17 @@ const hotelSchema = new mongoose.Schema(
         "Others",
       ],
       index: true,
-    },
-    hotelCode: {
+    }, // ✅ Permanent prefix generated from hotelName (e.g. EKO)
+    codePrefix: {
       type: String,
-      unique: true,
+      required: true,
       uppercase: true,
       trim: true,
       index: true,
     },
-    hotelCodePrefix: {
-      type: String,
-      uppercase: true,
-      trim: true,
-      index: true,
-    },
-    hotelCodeSeq: {
-      type: Number,
-      index: true,
-    },
+
+    // ✅ Counter used to generate per-check-in incremental codes
+    checkInSeq: { type: Number, default: 0 },
 
     isActive: {
       type: Boolean,

@@ -6,7 +6,8 @@ const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 
 const { notFound, errorHandler } = require("./middleware/error");
-const authRoutes = require("./routes/auth.routes"); // ✅ ADD THIS
+const authRoutes = require("./routes/auth.routes"); 
+const hotelCheckinRoutes = require("./routes/hotelCheckin.routes");
 
 dotenv.config();
 const app = express();
@@ -20,6 +21,7 @@ app.use(morgan("dev"));
 
 // ✅ MOUNT ROUTES
 app.use("/api/auth", authRoutes);
+app.use("/api/hotel-checkin", hotelCheckinRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

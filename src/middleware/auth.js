@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const env = require("../config/env");
+
 const ApiError = require("../utils/ApiError");
 
 function requireAuth(req, res, next) {
