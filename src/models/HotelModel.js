@@ -62,6 +62,23 @@ const hotelSchema = new mongoose.Schema(
       ],
       index: true,
     },
+    hotelCode: {
+      type: String,
+      unique: true,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
+    hotelCodePrefix: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
+    hotelCodeSeq: {
+      type: Number,
+      index: true,
+    },
 
     isActive: {
       type: Boolean,

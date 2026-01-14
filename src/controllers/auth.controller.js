@@ -2,6 +2,8 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/UserModel");
 const Hotel = require("../models/HotelModel");
 const generateToken = require("../utils/generateToken");
+const CodeCounter = require("../models/CodeCounterModel");
+const makeHotelPrefix = require("../utils/makeHotelPrefix");
 
 // 1) Register Hotel
 async function registerHotel(req, res) {
@@ -75,6 +77,18 @@ async function registerHotel(req, res) {
     });
 
     // Create Hotel Profile
+    const prefix = makeHotelPrefix(hotelName);
+
+    // Atomically increment sequence per prefix
+    const counter = await CodeCounter.findOneAndUpdate(
+      { prefix },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+
+    const seq = counter.seq; // 1,2,3...
+    const hotelCode = `${prefix}-${String(seq).padStart(3, "0")}`;
+
     const hotel = await Hotel.create({
       user: user._id,
       hotelName,
@@ -82,6 +96,9 @@ async function registerHotel(req, res) {
       locationText,
       peakDays: Array.isArray(peakDays) ? peakDays : [],
       category,
+      hotelCode,
+      hotelCodePrefix: prefix,
+      hotelCodeSeq: seq,
     });
 
     // Generate token

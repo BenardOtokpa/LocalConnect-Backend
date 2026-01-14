@@ -27,14 +27,14 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["HOTEL", "BUSINESS", "GUEST"],
+      enum: ["ADMIN", "HOTEL", "BUSINESS", "GUEST"],
       required: true,
       index: true,
     },
 
     authProvider: {
       type: String,
-      enum: ["LOCAL", "GOOGLE"],
+      enum: ["LOCAL", "GOOGLE", "HOTEL_CODE"],
       default: "LOCAL",
     },
 
