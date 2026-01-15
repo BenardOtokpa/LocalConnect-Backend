@@ -1,44 +1,50 @@
+const bcrypt = require("bcryptjs");
 const Hotel = require("../models/HotelModel");
-const CheckInCode = require("../models/CheckInCodeModel");
+const StayAccessCode = require("../models/StayAccessCodeModel");
 
-async function issueCheckInCode(req, res) {
-  const hotelUserId = req.auth.sub;
-  const { intendedEmail } = req.body || {};
+async function issueStayAccessCode(req, res) {
+  try {
+    const hotelUserId = req.auth.sub;
 
-  // find hotel profile
-  const hotel = await Hotel.findOne({ user: hotelUserId });
-  if (!hotel)
-    return res.status(404).json({ message: "Hotel profile not found" });
+    const hotel = await Hotel.findOne({ user: hotelUserId });
+    if (!hotel)
+      return res.status(404).json({ message: "Hotel profile not found" });
 
-  // atomically increment per-hotel counter
-  const updatedHotel = await Hotel.findByIdAndUpdate(
-    hotel._id,
-    { $inc: { checkInSeq: 1 } },
-    { new: true }
-  );
+    // increment per hotel
+    const updated = await Hotel.findByIdAndUpdate(
+      hotel._id,
+      { $inc: { checkInSeq: 1 } },
+      { new: true }
+    );
 
-  const seq = updatedHotel.checkInSeq;
-  const code = `${updatedHotel.codePrefix}-${String(seq).padStart(3, "0")}`;
+    const seq = updated.checkInSeq;
+    const codeLabel = `${updated.codePrefix}-${String(seq).padStart(3, "0")}`; // EHL-094
 
-  // optional: code expires in 24 hours
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // hash code
+    const codeHash = await bcrypt.hash(codeLabel, 10);
 
-  const record = await CheckInCode.create({
-    hotel: updatedHotel._id,
-    code,
-    seq,
-    status: "issued",
-    expiresAt,
-    intendedEmail: intendedEmail
-      ? intendedEmail.toLowerCase().trim()
-      : undefined,
-  });
+    // optional: default validity window (e.g. 7 days) – will still be revoked on checkout
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  return res.status(201).json({
-    message: "Check-in code issued",
-    code: record.code,
-    expiresAt: record.expiresAt,
-  });
+    await StayAccessCode.create({
+      hotelId: updated._id,
+      codeLabel,
+      codeHash,
+      status: "active",
+      expiresAt,
+    });
+
+    // IMPORTANT: return raw code ONCE to hotel
+    return res.status(201).json({
+      message: "Stay access code issued",
+      hotelId: updated._id,
+      code: codeLabel,
+      expiresAt,
+    });
+  } catch (err) {
+    console.error("ISSUE CODE ERROR:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
 }
 
-module.exports = { issueCheckInCode };
+module.exports = { issueStayAccessCode };

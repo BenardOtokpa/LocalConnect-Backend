@@ -8,7 +8,7 @@ function requireAuth(req, res, next) {
   if (!token) return next(new ApiError(401, "Missing Bearer token"));
 
   try {
-    const payload = jwt.verify(token, env.JWT_ACCESS_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.auth = payload; // { sub, role }
     next();
   } catch {
