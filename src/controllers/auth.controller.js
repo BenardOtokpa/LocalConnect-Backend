@@ -390,26 +390,37 @@ async function registerGuest(req, res) {
   }
 }
 
-// 4) Login (single endpoint for HOTEL/BUSINESS/GUEST using password)
+// 4) Login (single endpoint for HOTEL/BUSINESS/GUEST using password or Hotel Code)
 async function login(req, res) {
   try {
     const { email, password, hotelCode } = req.body;
 
-    if (!email) return res.status(400).json({ message: "Email is required" });
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ message: "Email is required" });
+    }
 
     const emailNorm = email.toLowerCase().trim();
 
+    // Treat as password login ONLY if password is a non-empty string
+    const hasPassword =
+      typeof password === "string" && password.trim().length > 0;
+
     // ====== GUEST LOGIN (email + hotelCode) ======
-    // If password is NOT provided, treat as guest-code login
-    if (!password) {
-      if (!hotelCode)
+    if (!hasPassword) {
+      if (
+        !hotelCode ||
+        typeof hotelCode !== "string" ||
+        hotelCode.trim().length === 0
+      ) {
         return res.status(400).json({ message: "Hotel ID is required" });
+      }
 
       const codeNorm = hotelCode.toUpperCase().trim();
 
-      const user = await User.findOne({ email: emailNorm });
-      if (!user)
+      const user = await User.findOne({ email: emailNorm }).lean();
+      if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
+      }
 
       if (user.role !== "GUEST" || user.authProvider !== "HOTEL_CODE") {
         return res
@@ -422,19 +433,21 @@ async function login(req, res) {
         status: "active",
       }).select("+codeHash");
 
-      if (!codeDoc)
-        return res.status(401).json({ message: "Invalid Hotel ID" });
+      if (!codeDoc) {
+        return res.status(401).json({ message: "Invalid or expired Hotel ID" });
+      }
 
-      // expire only by time OR checkout revoke (status revoked)
+      // Optional time expiry (real expiry is checkout -> revoked)
       if (codeDoc.expiresAt && codeDoc.expiresAt < new Date()) {
         return res.status(401).json({ message: "Hotel ID expired" });
       }
 
-      // verify code matches hash
       const ok = await bcrypt.compare(codeNorm, codeDoc.codeHash);
-      if (!ok) return res.status(401).json({ message: "Invalid Hotel ID" });
+      if (!ok) {
+        return res.status(401).json({ message: "Invalid or expired Hotel ID" });
+      }
 
-      // If code is already bound to a guest, enforce same guest
+      // If code is bound to a guest, enforce same guest
       if (
         codeDoc.guestUserId &&
         codeDoc.guestUserId.toString() !== user._id.toString()
@@ -457,7 +470,7 @@ async function login(req, res) {
           .json({ message: "No active stay for this Hotel ID" });
       }
 
-      const token = generateToken(user);
+      const token = generateToken({ _id: user._id, role: user.role });
 
       return res.json({
         message: "Login successful",
@@ -470,13 +483,20 @@ async function login(req, res) {
     const user = await User.findOne({ email: emailNorm }).select("+password");
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
+    // Don't allow password login for guest hotel-code accounts
+    if (user.role === "GUEST" || user.authProvider === "HOTEL_CODE") {
+      return res
+        .status(400)
+        .json({ message: "Guests must login using Hotel ID" });
+    }
+
     if (user.authProvider !== "LOCAL") {
       return res
         .status(400)
         .json({ message: `Use ${user.authProvider} login` });
     }
 
-    const ok = await bcrypt.compare(password, user.password);
+    const ok = await bcrypt.compare(password.trim(), user.password);
     if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
     const token = generateToken(user);
