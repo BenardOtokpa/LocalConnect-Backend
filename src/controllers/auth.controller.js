@@ -111,7 +111,7 @@ async function registerHotel(req, res) {
           locationText,
           peakDays: Array.isArray(peakDays) ? peakDays : [],
           category,
-          codePrefix, // ✅ REQUIRED by schema
+          codePrefix, // 
           checkInSeq: 0,
         },
       ],

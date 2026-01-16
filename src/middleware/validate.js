@@ -13,7 +13,7 @@ const validate = (schema) => {
         query: req.query,
       });
 
-      // Attach validated values (optional but best practice)
+      // Attach validated values (for best practice)
       req.validated = parsed;
 
       next();
