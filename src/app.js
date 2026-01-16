@@ -10,6 +10,7 @@ const authRoutes = require("./routes/auth.routes");
 const hotelCheckinRoutes = require("./routes/hotelCheckin.routes");
 const hotelRoutes = require("./routes/hotel.routes");
 const businessRoutes = require("./routes/business.routes");
+const guestRoutes = require("./routes/guest.routes");
 
 dotenv.config();
 const app = express();
@@ -26,6 +27,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/hotel-checkin", hotelCheckinRoutes);
 app.use("/api/hotel", hotelRoutes);
 app.use("/api/business", businessRoutes);
+app.use("/api/guest", guestRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
